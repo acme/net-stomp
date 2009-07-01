@@ -1,0 +1,33 @@
+Revision history for Perl module Net::Stomp:
+
+0.34 Fri Jun 27 09:29:13 BST 2008
+  - revert to 0.32's code, as the last release broke things that
+    I don't have time to fix right now 
+
+0.33 Wed Jun 25 08:45:59 BST 2008
+  - fixes from Paul Driver: can_read doesn't behave correctly. The 
+    docs say it returns true iff there's a frame waiting to be 
+    read, but it's just a select() call to see if there's data 
+    on the socket, which can return both false positives and
+    false negatives. While investigating this, I noticed that 
+    Net::Stomp::Frame->parse was modified at some point to take
+    a socket as its argument. This is inconsistent with docs and
+    probably not what was wanted anyway. parse and as_string 
+    should be symmetrical. Attached is a patch that fixes both 
+    issues and adds tests for them.
+
+0.32 Sun Oct 29 09:06:31 GMT 2006
+  - rewrote the parser to add support for BytesMessage, which should
+    allow Java<->Perl messages (thanks to Hiram Chirino and Sileshi
+    Kassa)
+  - set binmode() on the socket so Windows should now work (thanks
+    to Sileshi Kassa)
+
+0.31 Wed Oct 11 17:28:31 BST 2006
+  - minor docpatch noticed by Leo Lapworth
+  - tweak frame parser
+  - add unsubscribe() method
+  - add can_read() method
+
+0.30 Sat Oct  7 09:47:57 BST 2006
+  - initial release

@@ -1,0 +1,23 @@
+---
+name: Net-Stomp
+version: 0.34
+author:
+  - Leon Brocard <acme@astray.com>.
+abstract: A Streaming Text Orientated Messaging Protocol Client
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Class::Accessor::Fast: 0
+  IO::Select: 0
+  IO::Socket::INET: 0
+provides:
+  Net::Stomp:
+    file: lib/Net/Stomp.pm
+    version: 0.34
+  Net::Stomp::Frame:
+    file: lib/Net/Stomp/Frame.pm
+generated_by: Module::Build version 0.280801
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
