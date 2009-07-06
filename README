@@ -103,6 +103,20 @@ METHODS
 
     To send a BytesMessage, you should set the field 'bytes_message' to 1.
 
+  send_transactional
+    This sends a message in transactional mode and fails if the receipt of
+    the message is not acknowledged by the server:
+
+      $stomp->send_transactional(
+          { destination => '/queue/foo', body => 'test message' }
+      ) or die "Couldn't send the message!";
+
+    If using ActiveMQ, you might also want to make the message persistent:
+
+      $stomp->send_transactional(
+          { destination => '/queue/foo', body => 'test message', persistent => 'true' }
+      ) or die "Couldn't send the message!";
+
   disconnect
     This disconnects from the Stomp server:
 

@@ -5,7 +5,8 @@ use IO::Socket::INET;
 use IO::Select;
 use Net::Stomp::Frame;
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(hostname port select socket ssl ssl_options));
+__PACKAGE__->mk_accessors(
+    qw(hostname port select serial session_id socket ssl ssl_options));
 our $VERSION = '0.34';
 
 sub new {
@@ -20,7 +21,9 @@ sub new {
 
     if ( $self->ssl ) {
         eval { require IO::Socket::SSL };
-        die "You should install the IO::Socket::SSL module for SSL support in Net::Stomp" if $@;
+        die
+            "You should install the IO::Socket::SSL module for SSL support in Net::Stomp"
+            if $@;
         %sockopts = ( %sockopts, %{ $self->ssl_options || {} } );
         $socket = IO::Socket::SSL->new(%sockopts);
     } else {
@@ -43,12 +46,17 @@ sub connect {
         { command => 'CONNECT', headers => $conf } );
     $self->send_frame($frame);
     $frame = $self->receive_frame;
+
+    # Setting initial values for session id, as given from
+    # the stomp server
+    $self->session_id( $frame->headers->{session} );
+
     return $frame;
 }
 
 sub disconnect {
     my $self = shift;
-    my $frame = Net::Stomp::Frame->new( { command => 'DISCONNECT', } );
+    my $frame = Net::Stomp::Frame->new( { command => 'DISCONNECT' } );
     $self->send_frame($frame);
     $self->socket->close;
 }
@@ -66,6 +74,54 @@ sub send {
     my $frame = Net::Stomp::Frame->new(
         { command => 'SEND', headers => $conf, body => $body } );
     $self->send_frame($frame);
+}
+
+sub send_transactional {
+    my ( $self, $conf ) = @_;
+    my $body = $conf->{body};
+    delete $conf->{body};
+
+    # begin the transaction
+    my $transaction_id = $self->_get_next_transaction;
+    my $begin_frame
+        = Net::Stomp::Frame->new(
+        { command => 'BEGIN', headers => { transaction => $transaction_id } }
+        );
+    $self->send_frame($begin_frame);
+
+    # send the message
+    my $receipt_id = $self->_get_next_transaction;
+    $conf->{receipt} = $receipt_id;
+    my $message_frame = Net::Stomp::Frame->new(
+        { command => 'SEND', headers => $conf, body => $body } );
+    $self->send_frame($message_frame);
+
+    # check the receipt
+    my $receipt_frame = $self->receive_frame;
+    if (   $receipt_frame->command eq 'RECEIPT'
+        && $receipt_frame->headers->{'receipt-id'} eq $receipt_id )
+    {
+
+        # success, commit the transaction
+        my $frame_commit = Net::Stomp::Frame->new(
+            {   command => 'COMMIT',
+                headers => { transaction => $transaction_id }
+            }
+        );
+        $self->send_frame($frame_commit);
+
+        return 1;
+    } else {
+
+        # some failure, abort transaction
+        my $frame_abort = Net::Stomp::Frame->new(
+            {   command => 'ABORT',
+                headers => { transaction => $transaction_id }
+            }
+        );
+        $self->send_frame($frame_abort);
+        return 0;
+    }
 }
 
 sub subscribe {
@@ -104,6 +160,15 @@ sub receive_frame {
 
     #     warn "receive [" . $frame->as_string . "]\n";
     return $frame;
+}
+
+sub _get_next_transaction {
+    my $self = shift;
+    my $serial = $self->serial || 0;
+    $serial++;
+    $self->serial($serial);
+
+    return $self->session_id . '-' . $serial;
 }
 
 1;
@@ -219,6 +284,21 @@ This sends a message to a queue or topic. You must pass in a destination and a b
       { destination => '/queue/foo', body => 'test message' } );
 
 To send a BytesMessage, you should set the field 'bytes_message' to 1.
+
+=head2 send_transactional
+
+This sends a message in transactional mode and fails if the receipt of the
+message is not acknowledged by the server:
+
+  $stomp->send_transactional(
+      { destination => '/queue/foo', body => 'test message' }
+  ) or die "Couldn't send the message!";
+
+If using ActiveMQ, you might also want to make the message persistent:
+
+  $stomp->send_transactional(
+      { destination => '/queue/foo', body => 'test message', persistent => 'true' }
+  ) or die "Couldn't send the message!";
 
 =head2 disconnect
 
