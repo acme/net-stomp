@@ -5,6 +5,8 @@ Revision history for Perl module Net::Stomp:
   - add support for SSL (thanks to Aleksandar Ivanisevic)
   - add send_transactional (based on Net::Stomp::Receipt, thanks
     to Hugo Salgado)
+  - add some convenience methods for accessing headers in a frame
+    (thanks to Claes Jakobsson)
 
 0.34 Fri Jun 27 09:29:13 BST 2008
   - revert to 0.32's code, as the last release broke things that

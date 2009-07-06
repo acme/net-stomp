@@ -4,6 +4,21 @@ use warnings;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(command headers body));
 
+BEGIN {
+    for my $header (
+        qw(destination exchange content-type content-length message-id))
+    {
+        my $method = $header;
+        $method =~ s/-/_/g;
+        no strict 'refs';
+        *$method = sub {
+            my $self = shift;
+            $self->headers->{$header} = shift if @_;
+            $self->headers->{$header};
+            }
+    }
+}
+
 sub as_string {
     my $self    = shift;
     my $command = $self->command;
@@ -126,6 +141,26 @@ Create a new L<Net::Somp::Frame> given a string containing the serialised frame:
 Create a string containing the serialised frame representing the frame:
 
   my $string = $frame->as_string;
+
+=head2 destination
+
+Get or set the C<destination> header.
+
+=head2 content_type
+
+Get or set the C<content-type> header.
+
+=head2 content_length
+
+Get or set the C<content-length> header.
+
+=head2 exchange
+
+Get or set the C<exchange> header.
+
+=head2 message_id
+
+Get or set the C<message-id> header.
 
 =head1 SEE ALSO
 
