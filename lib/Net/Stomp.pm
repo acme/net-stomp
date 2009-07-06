@@ -108,9 +108,7 @@ sub send_transactional {
                 headers => { transaction => $transaction_id }
             }
         );
-        $self->send_frame($frame_commit);
-
-        return 1;
+        return $self->send_frame($frame_commit);
     } else {
 
         # some failure, abort transaction
