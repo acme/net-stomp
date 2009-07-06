@@ -1,5 +1,7 @@
 Build.PL
 CHANGES
+examples/subscribe.pl
+examples/send.pl
 lib/Net/Stomp.pm
 lib/Net/Stomp/Frame.pm
 Makefile.PL
