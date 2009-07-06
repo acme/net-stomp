@@ -2,6 +2,7 @@ Revision history for Perl module Net::Stomp:
 
 0.35
   - add some examples
+  - add support for SSL (thanks to Aleksandar Ivanisevic)
 
 0.34 Fri Jun 27 09:29:13 BST 2008
   - revert to 0.32's code, as the last release broke things that

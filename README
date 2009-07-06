@@ -47,14 +47,17 @@ DESCRIPTION
     For details on the protocol see <http://stomp.codehaus.org/Protocol>.
 
     To enable the ActiveMQ Broker for Stomp add the following to the
-    activemq.xml configuration:
+    activemq.xml configuration inside the <transportConnectors> section:
 
-      <connector>
-          <serverTransport uri="stomp://localhost:61613"/>
-      </connector>
+      <transportConnector name="stomp" uri="stomp://localhost:61613"/>
+
+    To enable the ActiveMQ Broker for Stomp and SSL add the following inside
+    the <transportConnectors> section:
+
+      <transportConnector name="stomp+ssl" uri="stomp+ssl://localhost:61612"/>
 
     For details on Stomp in ActiveMQ See
-    <http://www.activemq.org/site/stomp.html>.
+    <http://activemq.apache.org/stomp.html>.
 
 METHODS
   new
@@ -62,6 +65,24 @@ METHODS
     port:
 
       my $stomp = Net::Stomp->new( { hostname => 'localhost', port => '61613' } );
+
+    If you want to use SSL, make sure you have IO::Socket::SSL and pass in
+    the SSL flag:
+
+      my $stomp = Net::Stomp->new( {
+        hostname => 'localhost',
+        port     => '61612',
+        ssl      => 1,
+      } );
+
+    If you want to pass in IO::Socket::SSL options:
+
+      my $stomp = Net::Stomp->new( {
+        hostname    => 'localhost',
+        port        => '61612',
+        ssl         => 1,
+        ssl_options => { SSL_cipher_list => 'ALL:!EXPORT' },
+      } );
 
   connect
     This connects to the Stomp server. You must pass in a login and

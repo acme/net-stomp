@@ -5,17 +5,27 @@ use IO::Socket::INET;
 use IO::Select;
 use Net::Stomp::Frame;
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(hostname port select socket));
+__PACKAGE__->mk_accessors(qw(hostname port select socket ssl ssl_options));
 our $VERSION = '0.34';
 
 sub new {
-    my $class  = shift;
-    my $self   = $class->SUPER::new(@_);
-    my $socket = IO::Socket::INET->new(
+    my $class = shift;
+    my $self  = $class->SUPER::new(@_);
+    my ($socket);
+    my %sockopts = (
         PeerAddr => $self->hostname,
         PeerPort => $self->port,
         Proto    => 'tcp'
     );
+
+    if ( $self->ssl ) {
+        eval { require IO::Socket::SSL };
+        die "You should install the IO::Socket::SSL module for SSL support in Net::Stomp" if $@;
+        %sockopts = ( %sockopts, %{ $self->ssl_options || {} } );
+        $socket = IO::Socket::SSL->new(%sockopts);
+    } else {
+        $socket = IO::Socket::INET->new(%sockopts);
+    }
     die "Error connecting to " . $self->hostname . ':' . $self->port . ": $!"
         unless $socket;
     binmode($socket);
@@ -152,13 +162,16 @@ see L<Net::Stomp::Frame> for more details.
 For details on the protocol see L<http://stomp.codehaus.org/Protocol>.
 
 To enable the ActiveMQ Broker for Stomp add the following to the
-activemq.xml configuration:
+activemq.xml configuration inside the <transportConnectors> section:
 
-  <connector>
-      <serverTransport uri="stomp://localhost:61613"/>
-  </connector>
+  <transportConnector name="stomp" uri="stomp://localhost:61613"/>
 
-For details on Stomp in ActiveMQ See L<http://www.activemq.org/site/stomp.html>.
+To enable the ActiveMQ Broker for Stomp and SSL add the following
+inside the <transportConnectors> section:
+
+  <transportConnector name="stomp+ssl" uri="stomp+ssl://localhost:61612"/>
+
+For details on Stomp in ActiveMQ See L<http://activemq.apache.org/stomp.html>.
 
 =head1 METHODS
 
@@ -168,6 +181,24 @@ The constructor creates a new object. You must pass in a hostname and
 a port:
 
   my $stomp = Net::Stomp->new( { hostname => 'localhost', port => '61613' } );
+
+If you want to use SSL, make sure you have L<IO::Socket::SSL> and
+pass in the SSL flag:
+
+  my $stomp = Net::Stomp->new( {
+    hostname => 'localhost',
+    port     => '61612',
+    ssl      => 1,
+  } );
+
+If you want to pass in L<IO::Socket::SSL> options:
+
+  my $stomp = Net::Stomp->new( {
+    hostname    => 'localhost',
+    port        => '61612',
+    ssl         => 1,
+    ssl_options => { SSL_cipher_list => 'ALL:!EXPORT' },
+  } );
 
 =head2 connect
 
